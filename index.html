@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>PL Benefit Cost Calculator</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    </head>
+
+    <body>
+        <div id="benecalc" class="container">
+            <header>
+                <h1>PL Benefit Cost Calculator</h1>
+            </header>
+            <h3>Enter Beneficiary Names</h3>
+            <div class="row">
+                <div class="col-md-2">Employee</div>
+                <input v-model="employeeName" 
+                    placeholder="Employee Name" 
+                    type="text"
+                    width="50"
+                    required>
+            </div>
+            <div class="row">
+                <div class="col-md-2">Dependent</div>
+                <input v-model="newDependent" 
+                    placeholder="Dependent Name"
+                    type="text"
+                    width="50"
+                    v-on:keyup.enter="addDependent">
+                    <button v-on:click="addDependent" class="btn">Add Dependent</button>
+            </div>
+            <div class="row" v-if="hasDependents()">
+                <u class="col-md-2">Added Dependents:</u>
+            </div>
+            <div class="row">
+                <ul>
+                    <li v-for="dependent in dependents" :key="dependent.id">
+                        {{ dependent.name }} 
+                        <button v-on:click="removeDependent(dependent)">X</button>
+                    </li>
+                </ul>
+            </div>
+            <button v-on:click="calcAnnualCost" class="btn">Calculate</button>
+            <h3>Benefit Costs</h3>
+            <div class="row">
+                <div class="col-md-2">Annual Benefit Cost</div>
+                <div class="col-md-2">$ {{ annualCost.toFixed(2) }}</div>
+            </div>
+            <div class="row">
+                <div class="col-md-2">Monthly Deduction</div>
+                <div class="col-md-2">$ {{ monthlyDeduction.toFixed(2) }}</div>
+            </div>
+            <h3>Wages</h3>
+            <div class="row">
+                <div class="col-md-2">Wages per Pay Period</div>
+                <div class="col-md-2">$ {{ monthlyWages.toFixed(2) }}</div>
+            </div>
+            <div class="row">
+                <div class="col-md-2">Gross per Pay Period</div>
+                <div class="col-md-2">$ {{ monthlyNetWages.toFixed(2) }}</div>
+            </div>
+            <footer>
+                <div>&nbsp;</div>
+                <div class="small">&copy; 2018 T. Wilson</div>
+            </footer>
+        </div>
+    </body>
+
+    <script>
+        var benecalc = new Vue({
+            el: '#benecalc',
+            data: {
+                employeeBenefitCost: 1000,
+                dependentBenefitCost: 500,
+                discountForA: 0.1,
+                annualCost: 0,
+                monthlyWages: 2000,
+                monthlyNetWages: 0,
+                monthlyDeduction: 0,
+                employeeName: '',
+                newDependent: '',
+                dependents: [],
+                numberOfDependents: 0
+            },
+            methods: {
+                addDependent: function () {
+                    // Check if there is an dependent name
+                    if(this.newDependent.trim().length < 1) {
+                        this.newDependent = '';
+                        return;
+                    }
+                    console.log('adding a dependent: ' + this.newDependent)
+                    this.dependents.push({
+                        name: this.newDependent,
+                        id: this.numberOfDependents
+                    });
+                    this.numberOfDependents++;
+                    this.newDependent='';
+                },
+                calcAnnualCost: function () {
+                    // Check if there is an employee name
+                    if( this.employeeName.trim().length < 1) {
+                        this.employeeName='';
+                        return;
+                    }
+                    
+                    // Check if there is an unsaved dependent
+                    if(this.newDependent.length > 0) {
+                        this.addDependent();
+                    }
+
+                    this.annualCost = 0;
+
+                    // Calculate the cost for the employee
+                    if(this.nameStartsWithA(this.employeeName)){
+                        this.annualCost += this.employeeBenefitCost * (1 - this.discountForA);
+                    } else {
+                        this.annualCost += this.employeeBenefitCost;
+                    }
+
+                    // Calculate the cost for any dependents
+                    for(i = 0; i < this.dependents.length; i++) {
+                        if(this.nameStartsWithA(this.dependents[i].name)) {
+                            this.annualCost += this.dependentBenefitCost * (1 - this.discountForA);
+                        } else {
+                            this.annualCost += this.dependentBenefitCost;
+                        }
+                    }
+                    this.calcMonthlyCost();
+                },
+                calcMonthlyCost: function () {
+                    this.monthlyDeduction = this.annualCost / 26.0;
+                    this.monthlyNetWages = this.monthlyWages - this.monthlyDeduction;
+                },
+                nameStartsWithA: function (name) {
+                    return (name.charAt(0).toLowerCase() === 'a');
+                },
+                removeDependent: function (dependent) {
+                    this.dependents.splice(this.dependents.indexOf(dependent),1);
+                },
+                hasDependents: function () {
+                    return (this.dependents.length > 0);
+                }
+            }
+        })
+    </script>
+</html>
